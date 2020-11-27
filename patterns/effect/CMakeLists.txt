@@ -16,6 +16,13 @@ juce_add_plugin("${PLUGIN_CLASS_NAME}"
     # IS_MIDI_EFFECT TRUE/FALSE                 # Is this plugin a MIDI effect?
     # EDITOR_WANTS_KEYBOARD_FOCUS TRUE/FALSE    # Does the editor need keyboard focus?
     # COPY_PLUGIN_AFTER_BUILD TRUE/FALSE        # Should the plugin be installed to a default location after building?
+    VST2_CATEGORY kPlugCategEffect
+    VST3_CATEGORIES Fx Generator Synth
+    VST_COPY_DIR="/Library/Audio/Plug-Ins/VST"
+    VST3_COPY_DIR="/Library/Audio/Plug-Ins/VST3"
+    AU_COPY_DIR="/Library/Audio/Plug-Ins/Components"
+
+    AU_MAIN_TYPE kAudioUnitType_Effect
     PLUGIN_MANUFACTURER_CODE Acids              # A four-character manufacturer id with at least one upper-case character
     PLUGIN_CODE AxAx                            # A unique four-character plugin id with at least one upper-case character
     FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
@@ -23,7 +30,9 @@ juce_add_plugin("${PLUGIN_CLASS_NAME}"
 
 target_sources("${PLUGIN_CLASS_NAME}" PRIVATE
     PluginEditor.cpp
-    PluginProcessor.cpp)
+    PluginProcessor.cpp
+    PluginEditor.h
+    PluginProcessor.h)
 
 set_property(TARGET "${PLUGIN_CLASS_NAME}" PROPERTY CXX_STANDARD 14)
 target_compile_definitions("${PLUGIN_CLASS_NAME}"
@@ -34,9 +43,14 @@ target_compile_definitions("${PLUGIN_CLASS_NAME}"
     JUCE_VST3_CAN_REPLACE_VST2=0)
 
 find_package(Torch REQUIRED)
+
+juce_disable_default_flags()
 target_link_libraries("${PLUGIN_CLASS_NAME}" PRIVATE
     # AudioPluginData           # If we'd created a binary data target, we'd link to it here
-    juce::juce_audio_utils "${TORCH_LIBRARIES}")
+    juce::juce_audio_utils
+    "${TORCH_LIBRARIES}")
+
+set_target_properties("${PLUGIN_CLASS_NAME}" PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 #set_property(TARGET "${ACIDS_EXEC_NAME}" PROPERTY CXX_STANDARD 14)
 

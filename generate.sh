@@ -6,7 +6,7 @@ OUTPUT=$CURRENT_DIR
 CMAKE_BACKEND='Unix Makefiles'
 
 usage() { 
-    echo "usage : $0 -n NAME [-m PROJECT_NAME] [-o OUTPUT] [-b BACKEND] [-p PATTERN]" 1>&2 
+    echo "usage : $0 -n PROJECT_NAME [-t TARGET_NAME] [-o OUTPUT] [-b BACKEND] [-p PATTERN]" 1>&2 
 }
 
 exit_abnormal() { 
@@ -14,10 +14,10 @@ exit_abnormal() {
     exit 1
 }
 
-while getopts ":n:o:p:m:g:" options; do
+while getopts ":n:o:p:t:g:b:" options; do
     case "${options}" in
         n) 
-            TARGET_NAME=${OPTARG}
+            PROJECT_NAME=${OPTARG}
             ;;
         o) 
             OUTPUT=${OPTARG}
@@ -28,8 +28,11 @@ while getopts ":n:o:p:m:g:" options; do
         p)
             PROJECT_PATTERN=${OPTARG}
             ;;
-        m)
-            PROJECT_NAME=${OPTARG}
+        t)
+            TARGET_NAME=${OPTARG}
+            ;;
+        b)
+            CMAKE_BACKEND=${OPTARG}
             ;;
         *)
             usage
@@ -40,14 +43,22 @@ done
 echo "target name : " $TARGET_NAME 
 echo "project name : " $PROJECT_NAME
 echo "project pattern : "$PROJECT_PATTERN
-echo "output directory : " $OUTPUT 
+echo "output directory : " $OUTPUT/$PROJECT_NAME
 echo "backend : " $CMAKE_BACKEND
 
 
+if [ -z ${PROJECT_NAME} ]
+then
+	exit_abnormal 
+fi
+
 if [ -z ${TARGET_NAME} ]
 then
-    exit_abnormal
+	echo ${TARGET_NAME}
+	TARGET_NAME=${PROJECT_NAME}
 fi
+
+OUTPUT=${OUTPUT}/${PROJECT_NAME}
 
 if [ ! -d $OUTPUT ]
 then
@@ -76,7 +87,13 @@ OUTPUT_DIR=`pwd`
 # copy files from template and process substitutions
 while IFS="" read -r p || [ -n "$p" ]
 do
-  sed 's/${PLUGIN_CLASS_NAME}'/${TARGET_NAME}/g $CURRENT_DIR/patterns/${PROJECT_PATTERN}/$p > $p
+	if [ ! -d $CURRENT_DIR/patterns/${PROJECT_PATTERN}/$p ]
+	then
+		echo "file" $CURRENT_DIR/patterns/${PROJECT_PATTERN}/$p
+		sed 's/${PLUGIN_CLASS_NAME}'/${TARGET_NAME}/g $CURRENT_DIR/patterns/${PROJECT_PATTERN}/$p > $p
+	else
+		cp -r "$CURRENT_DIR/patterns/${PROJECT_PATTERN}/$p" .
+	fi
 done < $CURRENT_DIR/patterns/${PROJECT_PATTERN}/FileList.txt
 
 # copy CMakeLists file
@@ -84,6 +101,7 @@ cp $CURRENT_DIR/patterns/${PROJECT_PATTERN}/CMakeLists.txt .
 sed -i dull 's/${PLUGIN_CLASS_NAME}'/${TARGET_NAME}/g CMakeLists.txt 
 sed -i dull 's/${PLUGIN_PROJECT_NAME}'/${PROJECT_NAME}/g CMakeLists.txt 
 rm CMakeLists.txtdull
+
 
 # check libtorch
 if [ ! -d "libtorch/" ]
@@ -114,3 +132,6 @@ cd build
 CMAKE_PREFIX_PATH=${OUTPUT_DIR}/libtorch
 echo ${CMAKE_PREFIX_PATH}
 cmake -DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH} -G "${CMAKE_BACKEND}" -DJUCE_BUILD_EXAMPLES=OFF -DJUCE_BUILD_EXTRAS=OFF .. 
+
+
+

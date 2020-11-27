@@ -1,3 +1,5 @@
+models
+resources
 PluginEditor.cpp
 PluginEditor.h
 PluginProcessor.cpp
